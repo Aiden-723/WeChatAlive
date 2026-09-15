@@ -26,7 +26,7 @@
 ## 环境要求
 
 - Windows 10/11
-- 64 位 Python 3.9+
+- 64 位 Python 3.9+（建议从 python.org 安装，并勾选 `Add Python to PATH`）
 - Windows 微信 4.1.x，已登录
 - 任意 OpenAI 兼容 API 的接口地址、API Key 和模型 ID
 
