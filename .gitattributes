@@ -1,0 +1,2 @@
+# Keep Windows launchers byte-for-byte CRLF, including in GitHub ZIP archives.
+*.bat -text

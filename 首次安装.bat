@@ -4,25 +4,26 @@ cd /d "%~dp0"
 
 set "PYTHON_CMD="
 where py >nul 2>&1
-if not errorlevel 1 (
-  py -3 -c "import struct,sys; assert sys.version_info >= (3,9) and struct.calcsize('P') * 8 == 64" >nul 2>&1
-  if not errorlevel 1 set "PYTHON_CMD=py -3"
-)
-if defined PYTHON_CMD goto python_found
+if errorlevel 1 goto try_python
+py -3 -c "import struct,sys; assert sys.version_info[0] == 3 and sys.version_info[1] in range(9,100) and struct.calcsize('P') == 8" >nul 2>&1
+if errorlevel 1 goto try_python
+set "PYTHON_CMD=py -3"
+goto python_found
 
+:try_python
 where python >nul 2>&1
-if not errorlevel 1 (
-  python -c "import struct,sys; assert sys.version_info >= (3,9) and struct.calcsize('P') * 8 == 64" >nul 2>&1
-  if not errorlevel 1 set "PYTHON_CMD=python"
-)
-if defined PYTHON_CMD goto python_found
+if errorlevel 1 goto try_python3
+python -c "import struct,sys; assert sys.version_info[0] == 3 and sys.version_info[1] in range(9,100) and struct.calcsize('P') == 8" >nul 2>&1
+if errorlevel 1 goto try_python3
+set "PYTHON_CMD=python"
+goto python_found
 
+:try_python3
 where python3 >nul 2>&1
-if not errorlevel 1 (
-  python3 -c "import struct,sys; assert sys.version_info >= (3,9) and struct.calcsize('P') * 8 == 64" >nul 2>&1
-  if not errorlevel 1 set "PYTHON_CMD=python3"
-)
-if not defined PYTHON_CMD goto error
+if errorlevel 1 goto error
+python3 -c "import struct,sys; assert sys.version_info[0] == 3 and sys.version_info[1] in range(9,100) and struct.calcsize('P') == 8" >nul 2>&1
+if errorlevel 1 goto error
+set "PYTHON_CMD=python3"
 
 :python_found
 %PYTHON_CMD% -m venv .venv
