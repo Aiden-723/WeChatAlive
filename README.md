@@ -5,6 +5,7 @@
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)](https://github.com/Aiden-723/WeChatAlive)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
+[![Windows smoke test](https://github.com/Aiden-723/WeChatAlive/actions/workflows/windows-smoke.yml/badge.svg)](https://github.com/Aiden-723/WeChatAlive/actions/workflows/windows-smoke.yml)
 [![GitHub stars](https://img.shields.io/github/stars/Aiden-723/WeChatAlive?style=social)](https://github.com/Aiden-723/WeChatAlive/stargazers)
 
 群成员真正 `@` 机器人账号后，WeChatAlive 会调用你自己选择的 OpenAI 兼容模型，并把回答发回原群。接口地址、模型 ID、API Key 和角色人格均由使用者自行配置，项目不绑定任何模型厂商。
