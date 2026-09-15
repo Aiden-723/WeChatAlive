@@ -1,6 +1,6 @@
-"""Qwen Turbo bot for one local WeChat group.
+"""Provider-neutral AI bot for local WeChat groups.
 
-Only a text message that explicitly mentions this account is sent to Qwen.
+Only a text message that explicitly mentions this account is sent to the model.
 Historical messages are skipped when the listener starts.
 """
 
@@ -30,7 +30,7 @@ from wechatauto.guia import quick_send
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "bot_config.json"
-SECRET_PATH = ROOT / "填写千问密钥.txt"
+SECRET_PATH = ROOT / "填写API密钥.txt"
 RUNTIME_DIR = ROOT / ".bot-data"
 STATUS_PATH = RUNTIME_DIR / "status.json"
 CLAIMS_PATH = RUNTIME_DIR / "claimed_messages.json"
@@ -45,7 +45,7 @@ def acquire_instance_mutex():
     create_mutex = kernel32.CreateMutexW
     create_mutex.argtypes = (ctypes.c_void_p, ctypes.c_bool, ctypes.c_wchar_p)
     create_mutex.restype = ctypes.c_void_p
-    handle = create_mutex(None, False, "Local\\WeChatQwenGroupBot_f7b91d2c")
+    handle = create_mutex(None, False, "Local\\WeChatAliveBot_f7b91d2c")
     if not handle or ctypes.get_last_error() == 183:
         if handle:
             kernel32.CloseHandle(ctypes.c_void_p(handle))
@@ -138,8 +138,8 @@ def load_settings() -> dict:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             key, value = line.split("=", 1)
-            if key.strip() == "DASHSCOPE_API_KEY" and value.strip():
-                os.environ["DASHSCOPE_API_KEY"] = value.strip()
+            if key.strip() in {"API_KEY", "DASHSCOPE_API_KEY"} and value.strip():
+                os.environ["MODEL_API_KEY"] = value.strip()
     return settings
 
 
@@ -223,7 +223,7 @@ class AllGroupListener(Listener):
         super()._poll_once()
 
 
-def ask_qwen(settings: dict, api_key: str, history: deque, prompt: str) -> str:
+def ask_model(settings: dict, api_key: str, history: deque, prompt: str) -> str:
     url = settings["base_url"].rstrip("/") + "/chat/completions"
     messages = [{"role": "system", "content": settings["system_prompt"]}]
     messages.extend(history)
@@ -249,7 +249,7 @@ def ask_qwen(settings: dict, api_key: str, history: deque, prompt: str) -> str:
             payload = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:300]
-        raise RuntimeError(f"千问接口返回 HTTP {exc.code}: {detail}") from exc
+        raise RuntimeError(f"模型接口返回 HTTP {exc.code}: {detail}") from exc
     answer = payload["choices"][0]["message"]["content"].strip()
     return answer[: int(settings["max_reply_chars"])]
 
@@ -275,17 +275,25 @@ def check_only(settings: dict) -> int:
         "target_group_found": bool(db.get_groups()) if all_groups else bool(group_id),
         "reply_scope": "all_groups" if all_groups else "selected_group",
         "model": settings["model"],
-        "api_key_configured": bool(os.getenv("DASHSCOPE_API_KEY")),
+        "api_key_configured": bool(os.getenv("MODEL_API_KEY")),
     }
     print(json.dumps(report, ensure_ascii=False))
     return 0 if report["account_ready"] and report["target_group_found"] else 1
 
 
 def run_bot(settings: dict) -> int:
-    api_key = os.getenv("DASHSCOPE_API_KEY", "").strip()
+    api_key = os.getenv("MODEL_API_KEY", "").strip()
     if not api_key:
-        update_status(running=False, api_status="未配置", last_error="尚未配置千问 API Key")
-        print("请先打开‘填写千问密钥.txt’，在等号后粘贴百炼 API Key。")
+        update_status(running=False, api_status="未配置", last_error="尚未配置模型 API Key")
+        print("请先打开‘填写API密钥.txt’，在等号后粘贴 API Key。")
+        return 2
+    if not str(settings.get("model") or "").strip():
+        update_status(running=False, api_status="未配置", last_error="尚未填写模型 ID")
+        print("请先在管理界面填写模型 ID。")
+        return 2
+    if not str(settings.get("base_url") or "").strip():
+        update_status(running=False, api_status="未配置", last_error="尚未填写接口地址")
+        print("请先在管理界面填写 OpenAI 兼容接口地址。")
         return 2
 
     instance_mutex = acquire_instance_mutex()
@@ -329,11 +337,11 @@ def run_bot(settings: dict) -> int:
         is_mention, prompt = mentioned_me(db, current_group_id, message, self_info)
         if not is_mention:
             return
-        bump_status("mentions_handled", last_activity="收到 @，正在调用千问", last_error="")
+        bump_status("mentions_handled", last_activity="收到 @，正在调用模型", last_error="")
         try:
             sender = current_group_id + ":" + str(message.get("sender_username") or message.get("sender_id") or "群成员")
-            print("收到一条 @ 消息，正在调用千问……", flush=True)
-            answer = ask_qwen(settings, api_key, histories[sender], prompt)
+            print("收到一条 @ 消息，正在调用模型……", flush=True)
+            answer = ask_model(settings, api_key, histories[sender], prompt)
             if not claim_message(current_group_id, message):
                 update_status(last_activity="已拦截一条重复消息")
                 print("已拦截重复消息。", flush=True)
@@ -342,7 +350,7 @@ def run_bot(settings: dict) -> int:
                 update_status(last_activity="已拦截一条重复回答")
                 print("已拦截重复回答。", flush=True)
                 return
-            update_status(api_status="连接正常", last_activity="千问已生成回答")
+            update_status(api_status="连接正常", last_activity="模型已生成回答")
             target_group_name = group_names.get(current_group_id) or current_group_id
             with send_lock:
                 # WeChat 4.x can write the sent message to its database late.
@@ -400,7 +408,7 @@ def run_bot(settings: dict) -> int:
         )
         listener.start()
         scope_text = "所有微信群" if all_groups else f"群聊“{group_name}”"
-        print(f"机器人已启动：监听{scope_text}，只有被 @ 才会调用千问。", flush=True)
+        print(f"机器人已启动：监听{scope_text}，只有被 @ 才会调用模型。", flush=True)
         while not stop_event.wait(1.0):
             pass
     finally:
@@ -423,11 +431,11 @@ def main() -> int:
     if args.check:
         return check_only(settings)
     if args.test_api:
-        api_key = os.getenv("DASHSCOPE_API_KEY", "").strip()
+        api_key = os.getenv("MODEL_API_KEY", "").strip()
         if not api_key:
             print("api_ok=false")
             return 2
-        ask_qwen(settings, api_key, deque(), "只回复两个字：正常")
+        ask_model(settings, api_key, deque(), "只回复两个字：正常")
         print("api_ok=true")
         return 0
     return run_bot(settings)

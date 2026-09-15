@@ -1,4 +1,4 @@
-"""Modern multi-page dashboard for the local WeChat Qwen bot."""
+"""Modern multi-page dashboard for the local WeChat AI bot."""
 
 from __future__ import annotations
 
@@ -16,11 +16,11 @@ from tkinter import messagebox
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "bot_config.json"
-SECRET_PATH = ROOT / "填写千问密钥.txt"
+SECRET_PATH = ROOT / "填写API密钥.txt"
 RUNTIME_DIR = ROOT / ".bot-data"
 STATUS_PATH = RUNTIME_DIR / "status.json"
 PID_PATH = RUNTIME_DIR / "bot.pid"
-BOT_PATH = ROOT / "qwen_group_bot.py"
+BOT_PATH = ROOT / "wechat_ai_bot.py"
 
 BG, SIDEBAR, CARD = "#0B1220", "#0F172A", "#151F32"
 BORDER, TEXT, MUTED = "#26354F", "#F3F7FC", "#8EA1B9"
@@ -51,7 +51,8 @@ class Dashboard(ctk.CTk):
         self.geometry("1080x760")
         self.minsize(940, 680)
         self.config_data = read_json(CONFIG_PATH, {})
-        self.model_var = ctk.StringVar(value=self.config_data.get("model", "qwen-turbo"))
+        self.model_var = ctk.StringVar(value=self.config_data.get("model", ""))
+        self.base_url_var = ctk.StringVar(value=self.config_data.get("base_url", ""))
         self.temperature_var = ctk.DoubleVar(value=float(self.config_data.get("temperature", 0.7)))
         self.context_var = ctk.IntVar(value=int(self.config_data.get("context_rounds", 4)))
         self.max_chars_var = ctk.StringVar(value=str(self.config_data.get("max_reply_chars", 1500)))
@@ -113,7 +114,7 @@ class Dashboard(ctk.CTk):
         privacy.grid(row=9, column=0, sticky="sew", padx=14, pady=18)
         ctk.CTkLabel(privacy, text="隐私模式", text_color=BLUE,
                      font=("Microsoft YaHei UI", 11, "bold")).pack(anchor="w", padx=13, pady=(12, 3))
-        ctk.CTkLabel(privacy, text="只把真正的 @ 消息\n发送给千问模型",
+        ctk.CTkLabel(privacy, text="只把真正的 @ 消息\n发送给所选模型",
                      text_color=MUTED, justify="left",
                      font=("Microsoft YaHei UI", 10)).pack(anchor="w", padx=13, pady=(0, 12))
 
@@ -144,7 +145,7 @@ class Dashboard(ctk.CTk):
         self.status_pill.grid(row=0, column=1, rowspan=2, sticky="e")
 
     def _overview_page(self):
-        page, head = self._page("运行概览", "实时查看机器人、千问模型与群聊处理状态")
+        page, head = self._page("运行概览", "实时查看机器人、AI 模型与群聊处理状态")
         self._status_badge(head)
         hero = self._card(page)
         hero.grid(row=1, column=0, sticky="ew", padx=30)
@@ -152,7 +153,7 @@ class Dashboard(ctk.CTk):
         self.hero_title = ctk.CTkLabel(hero, text=self.group_var.get(), text_color=TEXT,
                                        font=("Microsoft YaHei UI", 19, "bold"))
         self.hero_title.grid(row=0, column=0, sticky="w", padx=20, pady=(18, 2))
-        self.hero_subtitle = ctk.CTkLabel(hero, text="仅原生 @ 触发  ·  qwen-turbo",
+        self.hero_subtitle = ctk.CTkLabel(hero, text="仅原生 @ 触发  ·  未配置模型",
                                           text_color=MUTED, font=("Microsoft YaHei UI", 11))
         self.hero_subtitle.grid(row=1, column=0, sticky="w", padx=20, pady=(0, 18))
         controls = ctk.CTkFrame(hero, fg_color="transparent")
@@ -198,16 +199,16 @@ class Dashboard(ctk.CTk):
         return page
 
     def _model_page(self):
-        page, head = self._page("模型设置", "调整千问模型、回答风格和短期记忆")
+        page, head = self._page("模型设置", "填写模型 ID，并调整回答风格和短期记忆")
         form = self._card(page)
         form.grid(row=1, column=0, sticky="new", padx=30)
         form.grid_columnconfigure(1, weight=1)
-        self._form_title(form, "千问参数", "保存后重启机器人生效")
+        self._form_title(form, "模型参数", "支持任意 OpenAI 兼容模型 ID")
         self._row_label(form, 1, "模型")
-        ctk.CTkOptionMenu(form, variable=self.model_var,
-                          values=["qwen3.5-flash", "qwen-turbo", "qwen-plus", "qwen-flash"],
-                          height=40, fg_color="#26364F", button_color="#314663",
-                          button_hover_color="#3B5576").grid(row=1, column=1, sticky="ew", padx=(12, 24), pady=9)
+        ctk.CTkEntry(form, textvariable=self.model_var, height=40,
+                     placeholder_text="例如：qwen3.5-flash / gpt-4.1-mini",
+                     fg_color="#0E1727", border_color=BORDER).grid(
+                         row=1, column=1, sticky="ew", padx=(12, 24), pady=9)
 
         self._row_label(form, 2, "创造性")
         temp_line = ctk.CTkFrame(form, fg_color="transparent")
@@ -268,11 +269,11 @@ class Dashboard(ctk.CTk):
         return page
 
     def _connection_page(self):
-        page, head = self._page("连接信息", "管理监听群聊、千问 API Key 与连接测试")
+        page, head = self._page("连接信息", "管理监听群聊、模型接口、API Key 与连接测试")
         card = self._card(page)
         card.grid(row=1, column=0, sticky="new", padx=30)
         card.grid_columnconfigure(1, weight=1)
-        self._form_title(card, "微信与千问", "API Key 只保存在本机，不会显示在界面中")
+        self._form_title(card, "微信与模型", "API Key 只保存在本机，不会显示在界面中")
         self._row_label(card, 1, "回复范围")
         ctk.CTkOptionMenu(card, variable=self.scope_var,
                           values=["所有微信群", "指定群聊"], height=40,
@@ -283,8 +284,10 @@ class Dashboard(ctk.CTk):
                      placeholder_text="仅在‘指定群聊’模式下使用",
                      fg_color="#0E1727", border_color=BORDER).grid(row=2, column=1, sticky="ew", padx=(12, 24), pady=9)
         self._row_label(card, 3, "模型接口")
-        ctk.CTkLabel(card, text="阿里云百炼 · OpenAI 兼容接口", text_color=TEXT,
-                     anchor="w").grid(row=3, column=1, sticky="ew", padx=(12, 24), pady=9)
+        ctk.CTkEntry(card, textvariable=self.base_url_var, height=40,
+                     placeholder_text="例如：https://.../v1",
+                     fg_color="#0E1727", border_color=BORDER).grid(
+                         row=3, column=1, sticky="ew", padx=(12, 24), pady=9)
         self._row_label(card, 4, "API Key")
         ctk.CTkEntry(card, textvariable=self.key_var, show="●", height=40,
                      placeholder_text="已配置；留空则不修改", fg_color="#0E1727",
@@ -342,7 +345,8 @@ class Dashboard(ctk.CTk):
         for key, label in self.stat_values.items():
             label.configure(text=str(data.get(key, 0)))
         self.hero_title.configure(text=str(data.get("group_name", self.group_var.get())))
-        self.hero_subtitle.configure(text=f"仅原生 @ 触发  ·  {data.get('model', self.model_var.get())}")
+        model_text = data.get("model") or self.model_var.get() or "未配置模型"
+        self.hero_subtitle.configure(text=f"仅原生 @ 触发  ·  {model_text}")
         for key, label in self.detail_labels.items():
             label.configure(text=str(data.get(key) or "-"))
         api_status = str(data.get("api_status") or "等待检测")
@@ -365,7 +369,8 @@ class Dashboard(ctk.CTk):
             messagebox.showerror("设置有误", "创造性范围 0–1.9，记忆轮数 0–20，回复字数 100–4000。")
             return False
         data = read_json(CONFIG_PATH, {})
-        data.update(model=self.model_var.get().strip() or "qwen-turbo",
+        data.update(model=self.model_var.get().strip(),
+                    base_url=self.base_url_var.get().strip(),
                     group_name=self.group_var.get().strip() or "示例群聊",
                     reply_scope="all_groups" if self.scope_var.get() == "所有微信群" else "selected_group",
                     temperature=temperature, context_rounds=context_rounds,
@@ -377,7 +382,7 @@ class Dashboard(ctk.CTk):
         self.config_data = data
         new_key = self.key_var.get().strip()
         if new_key:
-            SECRET_PATH.write_text("DASHSCOPE_API_KEY=" + new_key + "\n", encoding="utf-8")
+            SECRET_PATH.write_text("API_KEY=" + new_key + "\n", encoding="utf-8")
             self.key_var.set("")
         self.notice_var.set("设置已保存")
         return True
@@ -423,7 +428,7 @@ class Dashboard(ctk.CTk):
         self.after(850, self.start_bot)
 
     def test_api(self):
-        self.notice_var.set("正在测试千问 API……")
+        self.notice_var.set("正在测试模型 API……")
         self.connection_status.configure(text="连接状态：正在测试……", text_color=AMBER)
 
         def worker():
@@ -432,9 +437,9 @@ class Dashboard(ctk.CTk):
                                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             def finish():
                 ok = result.returncode == 0
-                text = "连接状态：千问连接正常" if ok else "连接状态：连接失败，请检查 API Key"
+                text = "连接状态：模型连接正常" if ok else "连接状态：连接失败，请检查接口、模型和 API Key"
                 self.connection_status.configure(text=text, text_color=GREEN if ok else RED)
-                self.notice_var.set("千问连接正常" if ok else "千问连接失败")
+                self.notice_var.set("模型连接正常" if ok else "模型连接失败")
             self.after(0, finish)
         threading.Thread(target=worker, daemon=True).start()
 

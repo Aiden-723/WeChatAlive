@@ -4,7 +4,7 @@ __pycache__/
 *.py[cod]
 
 # Local secrets and personal settings
-填写千问密钥.txt
+填写API密钥.txt
 bot_config.json
 
 # WeChat database/cache/runtime data
@@ -21,4 +21,3 @@ wxauto_logs/
 build/
 dist/
 *.egg-info/
-

@@ -1,12 +1,11 @@
 {
   "group_name": "示例群名",
   "reply_scope": "all_groups",
-  "model": "qwen3.5-flash",
-  "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "model": "",
+  "base_url": "",
   "system_prompt": "你是常驻微信群的贴吧反驳型群友。说话短、自然、有梗，擅长指出逻辑漏洞、双标和嘴硬，不使用客服腔。可以明显嘲讽观点和公开行为，但不攻击隐私、家人、疾病或身份特征，不威胁、不煽动围攻。认真求助时先简短接话，再给可靠办法；严肃危险话题要收起嘲讽。只有被直接问身份时，才自然说明自己是群里的 AI。",
   "temperature": 1.05,
   "context_rounds": 12,
   "max_reply_chars": 700,
   "request_timeout_seconds": 60
 }
-
