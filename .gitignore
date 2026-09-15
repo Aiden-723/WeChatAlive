@@ -1,0 +1,24 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local secrets and personal settings
+填写千问密钥.txt
+bot_config.json
+
+# WeChat database/cache/runtime data
+.bot-data/
+.probe-data/
+.diagnose-data/
+wxauto_logs/
+@AutomationLog.txt
+*.log
+
+# Editors/build output
+.idea/
+.vscode/
+build/
+dist/
+*.egg-info/
+
