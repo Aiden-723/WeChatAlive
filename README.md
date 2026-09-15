@@ -2,7 +2,14 @@
 
 > 让你的 Windows 微信账号“活”起来，变成群里会聊天的 AI 群友。
 
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)](https://github.com/shixiangliu24-cmd/WeChatAlive)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/shixiangliu24-cmd/WeChatAlive?style=social)](https://github.com/shixiangliu24-cmd/WeChatAlive/stargazers)
+
 群成员真正 `@` 机器人账号后，WeChatAlive 会调用你自己选择的 OpenAI 兼容模型，并把回答发回原群。接口地址、模型 ID、API Key 和角色人格均由使用者自行配置，项目不绑定任何模型厂商。
+
+如果这个项目让你的微信群更有意思，欢迎点一个 **Star** ⭐
 
 ## 已实现
 
